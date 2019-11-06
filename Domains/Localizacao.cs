@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace GUFOS_BackEnd.Domains
+namespace backend.Domains
 {
     public partial class Localizacao
     {

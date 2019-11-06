@@ -1,89 +1,84 @@
+using backend.Domains;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GUFOS_BackEnd.Domains;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using backend.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
-namespace GUFOS_BackEnd.Controllers
+// Adiciona a arvore de objetos 
+// dotnet add package Microsoft.AspNetCore.Mvc.NewtonsoftJson
+
+
+namespace backend.Controllers
 {
-    [Route("api/[controller]")]
+    // Define a rota do controller, e diz que é um controller de API
+    [Route("api/[controller]")] 
     [ApiController]
+    [Authorize]
     public class EventoController : ControllerBase
     {
-        GufosContext _context = new GufosContext();
 
+        EventoRepository _repositorio = new EventoRepository();
 
-        // GET: api/Evento/
+        // GET: api/Evento
         [HttpGet]
         public async Task<ActionResult<List<Evento>>> Get()
         {
-            var eventos = await _context.Evento.Include(c => c.Categoria).Include(l => l.Localizacao).ToListAsync();
+            var eventos = await _repositorio.Listar();
 
-            if (eventos == null)
-            {
+            if(eventos == null) {
                 return NotFound();
             }
 
             return eventos;
         }
-
-        // GET: api/Evento/5
+        
+        // GET: api/Evento/2
         [HttpGet("{id}")]
         public async Task<ActionResult<Evento>> Get(int id)
         {
-            var evento = await _context.Evento.Include(c => c.Categoria).Include(l => l.Localizacao).FirstOrDefaultAsync(e => e.EventoId == id);
+            var evento = await _repositorio.BuscarPorID(id);
 
-            if (evento == null)
-            {
+            if(evento == null) {
                 return NotFound();
             }
 
             return evento;
         }
 
-        // POST: api/Evento/
+        // POST: api/Evento
         [HttpPost]
         public async Task<ActionResult<Evento>> Post(Evento evento)
         {
             try
             {
-                await _context.AddAsync(evento);
-                await _context.SaveChangesAsync();
+                await _repositorio.Salvar(evento);
             }
             catch (DbUpdateConcurrencyException)
             {
                 throw;
             }
+            return evento;          
+        }
 
-            return evento;
-        }        
-
-
-        // PUT: api/Evento/5
+        // PUT
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(long id, Evento evento)
+        public async Task<ActionResult> Put(int id, Evento evento)
         {
-            if (id != evento.EventoId)
-            {
+            if(id != evento.EventoId){
                 return BadRequest();
-            }
+            }                     
+            
+            try {
+                await _repositorio.Alterar(evento);
+            } catch (DbUpdateConcurrencyException) {
+                // Verfica se o objeto inserido existe no banco
+                var evento_valido = await _repositorio.BuscarPorID(id);
 
-            _context.Entry(evento).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                var evento_valido = await _context.Evento.FindAsync(id);
-
-                if (evento_valido == null)
-                {
+                if(evento_valido == null) {
                     return NotFound();
-                }
-                else
-                {
+                } else {
                     throw;
                 }
             }
@@ -91,23 +86,18 @@ namespace GUFOS_BackEnd.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Evento/5
+        // DELETE api/evento/id
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Evento>> Delete(int id)
-        {
-            var evento = await _context.Evento.FindAsync(id);
-            if (evento == null)
-            {
+        public async Task<ActionResult<Evento>> Delete(int id){
+            var evento = await _repositorio.BuscarPorID(id);
+
+            if(evento == null) {
                 return NotFound();
-            }
+            }           
 
-            _context.Evento.Remove(evento);
-            await _context.SaveChangesAsync();
-
+            await _repositorio.Excluir(evento);
+            
             return evento;
         }
-
-
-
     }
 }

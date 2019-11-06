@@ -1,89 +1,80 @@
+using backend.Domains;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GUFOS_BackEnd.Domains;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using backend.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
-namespace GUFOS_BackEnd.Controllers
+namespace backend.Controllers
 {
-    [Route("api/[controller]")]
+    // Define a rota do controller, e diz que é um controller de API
+    [Route("api/[controller]")] 
     [ApiController]
+    [Authorize]
     public class LocalizacaoController : ControllerBase
     {
-        GufosContext _context = new GufosContext();
+        LocalizacaoRepository _repositorio = new LocalizacaoRepository();
 
-
-        // GET: api/Localizacao/
+        // GET: api/Localizacao
         [HttpGet]
         public async Task<ActionResult<List<Localizacao>>> Get()
         {
-            var localizacao = await _context.Localizacao.ToListAsync();
+            var localizacoes = await _repositorio.Listar();
 
-            if (localizacao == null)
-            {
+            if(localizacoes == null) {
                 return NotFound();
             }
 
-            return localizacao;
+            return localizacoes;
         }
-
-        // GET: api/Localizacao/5
+        
+        // GET: api/Localizacao/2
         [HttpGet("{id}")]
         public async Task<ActionResult<Localizacao>> Get(int id)
         {
-            var localizacao = await _context.Localizacao.FindAsync(id);
+            var localizacao = await _repositorio.BuscarPorID(id);
 
-            if (localizacao == null)
-            {
+            if(localizacao == null) {
                 return NotFound();
             }
 
             return localizacao;
         }
 
-        // POST: api/Localizacao/
+        // POST: api/Localizacao
         [HttpPost]
         public async Task<ActionResult<Localizacao>> Post(Localizacao localizacao)
         {
             try
             {
-                await _context.AddAsync(localizacao);
-                await _context.SaveChangesAsync();
+                await _repositorio.Salvar(localizacao);
             }
             catch (DbUpdateConcurrencyException)
             {
                 throw;
             }
-
+            
             return localizacao;
-        }        
+        }
 
-
-        // PUT: api/Localizacao/5
+        // PUT
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(long id, Localizacao localizacao)
+        public async Task<ActionResult> Put(int id, Localizacao localizacao)
         {
-            if (id != localizacao.LocalizacaoId)
-            {
+            if(id != localizacao.LocalizacaoId){
                 return BadRequest();
             }
 
-            _context.Entry(localizacao).State = EntityState.Modified;
+            try {
+                await _repositorio.Alterar(localizacao);
+            } catch (DbUpdateConcurrencyException) {
+                // Verfica se o objeto inserido existe no banco
+                var localizacao_valido = await _repositorio.BuscarPorID(id);
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                var localizacao_valido = await _context.Localizacao.FindAsync(id);
-
-                if (localizacao_valido == null)
-                {
+                if(localizacao_valido == null) {
                     return NotFound();
-                }
-                else
-                {
+                } else {
                     throw;
                 }
             }
@@ -91,23 +82,16 @@ namespace GUFOS_BackEnd.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Localizacao/5
+        // DELETE api/localizacao/id
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Localizacao>> Delete(int id)
-        {
-            var localizacao = await _context.Localizacao.FindAsync(id);
-            if (localizacao == null)
-            {
+        public async Task<ActionResult<Localizacao>> Delete(int id){
+            var localizacao = await _repositorio.BuscarPorID(id);
+
+            if(localizacao == null) {
                 return NotFound();
-            }
-
-            _context.Localizacao.Remove(localizacao);
-            await _context.SaveChangesAsync();
-
+            }           
+            
             return localizacao;
         }
-
-
-
     }
 }
