@@ -115,6 +115,9 @@ namespace backend
             app.UseAuthentication();
 
             app.UseHttpsRedirection();
+         
+            // Usamos no deploy
+            app.UseDeveloperExceptionPage();
 
             app.UseRouting();
 
